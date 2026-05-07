@@ -3,9 +3,26 @@ import { useState, useEffect } from 'react'
 const COMMON_EMOJIS = ['✅', '💪', '📚', '🏃', '🧘', '💧', '🥗', '😴', '🎯', '✍️',
   '🎸', '🧹', '💊', '🌿', '🐕', '💻', '🎨', '🗣️', '🧠', '❤️']
 
+const CATEGORIES = ['General', 'Health', 'Work', 'Mindset', 'Growth', 'Home']
+
+const COLORS = [
+  '#8b5cf6', // Violet
+  '#ec4899', // Pink
+  '#f43f5e', // Rose
+  '#f97316', // Orange
+  '#eab308', // Yellow
+  '#10b981', // Emerald
+  '#06b6d4', // Cyan
+  '#3b82f6', // Blue
+  '#6366f1', // Indigo
+  '#64748b', // Slate
+]
+
 export default function HabitForm({ habit, onSave, onClose }) {
   const [name, setName] = useState(habit?.name || '')
   const [emoji, setEmoji] = useState(habit?.emoji || '✅')
+  const [category, setCategory] = useState(habit?.category || 'General')
+  const [color, setColor] = useState(habit?.color || '#8b5cf6')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const isEdit = Boolean(habit)
@@ -22,7 +39,7 @@ export default function HabitForm({ habit, onSave, onClose }) {
     setLoading(true)
     setError('')
     try {
-      await onSave(name.trim(), emoji)
+      await onSave(name.trim(), emoji, category, color)
       onClose()
     } catch (err) {
       setError(err.message)
@@ -100,6 +117,52 @@ export default function HabitForm({ habit, onSave, onClose }) {
                 autoFocus
                 className="input-field"
               />
+            </div>
+
+            {/* Category selection */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                Category
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setCategory(cat)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-150 ${
+                      category === cat
+                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Color selection */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                Color
+              </label>
+              <div className="flex flex-wrap gap-2.5">
+                {COLORS.map(c => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setColor(c)}
+                    className={`w-7 h-7 rounded-full transition-all duration-150 ${
+                      color === c
+                        ? 'ring-2 ring-offset-2 ring-slate-400 dark:ring-offset-slate-800'
+                        : 'hover:scale-110'
+                    }`}
+                    style={{ backgroundColor: c }}
+                    aria-label={`Select color ${c}`}
+                  />
+                ))}
+              </div>
             </div>
 
             {/* Actions */}

@@ -2,7 +2,7 @@ export default function TabNav({ activeTab, onTabChange }) {
   const tabs = [
     { id: 'today', label: 'Today', icon: '✅' },
     { id: 'week', label: 'Week', icon: '📅' },
-    { id: 'report', label: 'Report', icon: '📊' },
+    { id: 'report', label: 'Insights', icon: '📈' },
   ]
 
   return (

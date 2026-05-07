@@ -7,12 +7,13 @@ import HabitForm from '../components/dashboard/HabitForm'
 export default function TodayPage({ habits, completions, loading, onAddHabit, onUpdateHabit, onDeleteHabit, onToggle }) {
   const [showForm, setShowForm] = useState(false)
   const [editingHabit, setEditingHabit] = useState(null)
+  const [activeCategory, setActiveCategory] = useState('All')
 
-  const handleSave = async (name, emoji) => {
+  const handleSave = async (name, emoji, category, color) => {
     if (editingHabit) {
-      await onUpdateHabit(editingHabit.id, name, emoji)
+      await onUpdateHabit(editingHabit.id, name, emoji, category, color)
     } else {
-      await onAddHabit(name, emoji)
+      await onAddHabit(name, emoji, category, color)
     }
   }
 
@@ -25,6 +26,11 @@ export default function TodayPage({ habits, completions, loading, onAddHabit, on
     setShowForm(false)
     setEditingHabit(null)
   }
+
+  const categories = ['All', ...new Set(habits.map(h => h.category || 'General'))]
+  const filteredHabits = activeCategory === 'All' 
+    ? habits 
+    : habits.filter(h => (h.category || 'General') === activeCategory)
 
   if (loading) {
     return (
@@ -46,7 +52,7 @@ export default function TodayPage({ habits, completions, loading, onAddHabit, on
       <SummaryCards habits={habits} completions={completions} />
 
       {/* Habit list header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-bold text-slate-900 dark:text-slate-100">Today&apos;s Habits</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -65,6 +71,25 @@ export default function TodayPage({ habits, completions, loading, onAddHabit, on
         </button>
       </div>
 
+      {/* Category Filter */}
+      {habits.length > 0 && categories.length > 2 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {categories.map(cat => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-200 border ${
+                activeCategory === cat
+                  ? 'bg-slate-900 border-slate-900 text-white dark:bg-white dark:border-white dark:text-slate-900 shadow-lg shadow-slate-900/10 dark:shadow-white/10'
+                  : 'bg-white border-slate-200 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Habit list */}
       {habits.length === 0 ? (
         <div className="text-center py-16 glass-card-solid animate-fade-in">
@@ -82,17 +107,24 @@ export default function TodayPage({ habits, completions, loading, onAddHabit, on
           </button>
         </div>
       ) : (
-        <div className="space-y-2">
-          {habits.map(habit => (
-            <HabitCard
-              key={habit.id}
-              habit={habit}
-              completions={completions}
-              onToggle={onToggle}
-              onEdit={openEdit}
-              onDelete={onDeleteHabit}
-            />
-          ))}
+        <div className="space-y-2.5">
+          {filteredHabits.length === 0 ? (
+            <div className="text-center py-12 text-slate-400">
+              <p className="text-2xl mb-2">🔍</p>
+              <p className="text-sm">No habits found in this category</p>
+            </div>
+          ) : (
+            filteredHabits.map(habit => (
+              <HabitCard
+                key={habit.id}
+                habit={habit}
+                completions={completions}
+                onToggle={onToggle}
+                onEdit={openEdit}
+                onDelete={onDeleteHabit}
+              />
+            ))
+          )}
         </div>
       )}
 

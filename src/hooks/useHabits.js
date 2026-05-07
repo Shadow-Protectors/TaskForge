@@ -24,10 +24,10 @@ export function useHabits(userId) {
     fetchHabits()
   }, [fetchHabits])
 
-  const addHabit = async (name, emoji = '✅') => {
+  const addHabit = async (name, emoji = '✅', category = 'General', color = '#8b5cf6') => {
     const { data, error } = await supabase
       .from('habits')
-      .insert([{ user_id: userId, name, emoji }])
+      .insert([{ user_id: userId, name, emoji, category, color }])
       .select()
       .single()
 
@@ -36,10 +36,10 @@ export function useHabits(userId) {
     return data
   }
 
-  const updateHabit = async (id, name, emoji) => {
+  const updateHabit = async (id, name, emoji, category, color) => {
     const { data, error } = await supabase
       .from('habits')
-      .update({ name, emoji })
+      .update({ name, emoji, category, color })
       .eq('id', id)
       .select()
       .single()

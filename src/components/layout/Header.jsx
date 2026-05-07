@@ -1,26 +1,46 @@
 import { supabase } from '../../lib/supabase'
 import { APP_NAME } from '../../config/constants'
 
-export default function Header({ user, darkMode, onToggleDark }) {
+export default function Header({ user, darkMode, onToggleDark, gamification }) {
   const handleLogout = async () => {
     await supabase.auth.signOut()
   }
 
+  const { level, progress, xp } = gamification || {}
+
   return (
     <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-700/50">
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Logo */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
-            <span className="text-lg">🔥</span>
+        {/* Logo & Level */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 bg-gradient-to-br from-violet-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/30">
+              <span className="text-lg">🔥</span>
+            </div>
+            <span className="font-bold text-lg gradient-text hidden sm:block">{APP_NAME}</span>
           </div>
-          <span className="font-bold text-lg gradient-text hidden sm:block">{APP_NAME}</span>
+
+          {/* Level Badge */}
+          {user && gamification && (
+            <div className="flex flex-col gap-1 min-w-[100px] sm:min-w-[140px]">
+              <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <span>Level {level}</span>
+                <span>{xp} XP</span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-violet-500 to-pink-500 transition-all duration-500 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* User info + controls */}
         <div className="flex items-center gap-2">
           {user && (
-            <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block truncate max-w-[140px]">
+            <span className="text-xs text-slate-500 dark:text-slate-400 hidden md:block truncate max-w-[140px]">
               {user.email}
             </span>
           )}

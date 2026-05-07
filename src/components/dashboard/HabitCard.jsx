@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import confetti from 'canvas-confetti'
 import { calculateStreak } from '../../hooks/useStreak'
 
 export default function HabitCard({ habit, completions, onToggle, onEdit, onDelete }) {
@@ -8,6 +9,18 @@ export default function HabitCard({ habit, completions, onToggle, onEdit, onDele
   const habitDates = completions.filter(c => c.habit_id === habit.id).map(c => c.date)
   const isCompletedToday = habitDates.includes(today)
   const streak = calculateStreak(habitDates)
+
+  const handleToggle = () => {
+    if (!isCompletedToday) {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#8b5cf6', '#ec4899', '#f43f5e']
+      })
+    }
+    onToggle(habit.id, today)
+  }
 
   const handleDelete = async () => {
     if (!confirm(`Delete "${habit.name}"? This will also remove all completions.`)) return
@@ -26,9 +39,13 @@ export default function HabitCard({ habit, completions, onToggle, onEdit, onDele
       {/* Checkbox */}
       <button
         id={`complete-habit-${habit.id}`}
-        onClick={() => onToggle(habit.id, today)}
+        onClick={handleToggle}
         aria-label={`Mark ${habit.name} as ${isCompletedToday ? 'incomplete' : 'complete'}`}
         className={`habit-checkbox ${isCompletedToday ? 'habit-checkbox-done' : 'hover:border-violet-400'}`}
+        style={{ 
+          backgroundColor: isCompletedToday ? habit.color || '#8b5cf6' : 'transparent',
+          borderColor: isCompletedToday ? habit.color || '#8b5cf6' : undefined
+        }}
       >
         {isCompletedToday && (
           <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
@@ -42,14 +59,21 @@ export default function HabitCard({ habit, completions, onToggle, onEdit, onDele
 
       {/* Name + streak */}
       <div className="flex-1 min-w-0">
-        <p className={`font-semibold text-sm truncate transition-colors ${
-          isCompletedToday ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100'
-        }`}>
-          {habit.name}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className={`font-semibold text-sm truncate transition-colors ${
+            isCompletedToday ? 'text-slate-400 dark:text-slate-500 line-through' : 'text-slate-800 dark:text-slate-100'
+          }`}>
+            {habit.name}
+          </p>
+          {habit.category && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 uppercase font-bold tracking-wider">
+              {habit.category}
+            </span>
+          )}
+        </div>
         {streak > 0 && (
           <div className="mt-1">
-            <span className="streak-badge">
+            <span className="streak-badge" style={{ backgroundColor: `${habit.color}15`, color: habit.color }}>
               🔥 {streak} day streak
             </span>
           </div>

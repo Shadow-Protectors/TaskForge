@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
 import { useHabits } from './hooks/useHabits'
 import { useCompletions } from './hooks/useCompletions'
+import { useGamification } from './hooks/useGamification'
 import AuthPage from './components/auth/AuthPage'
 import Header from './components/layout/Header'
 import TabNav from './components/layout/TabNav'
+import { motion, AnimatePresence } from 'framer-motion'
 import TodayPage from './pages/TodayPage'
 import WeekPage from './pages/WeekPage'
 import ReportPage from './pages/ReportPage'
@@ -56,7 +58,15 @@ export default function App() {
     toggleCompletion,
   } = useCompletions(userId)
 
-  const loading = habitsLoading || completionsLoading
+  const gamification = useGamification(userId)
+
+  // Wrap toggleCompletion to refresh gamification
+  const handleToggle = async (habitId, date) => {
+    await toggleCompletion(habitId, date)
+    gamification.refreshGamification()
+  }
+
+  const loading = habitsLoading || completionsLoading || gamification.loading
 
   if (authLoading) {
     return (
@@ -81,6 +91,7 @@ export default function App() {
         user={session.user}
         darkMode={darkMode}
         onToggleDark={() => setDarkMode(d => !d)}
+        gamification={gamification}
       />
 
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
@@ -88,31 +99,41 @@ export default function App() {
         <TabNav activeTab={activeTab} onTabChange={setActiveTab} />
 
         {/* Page content */}
-        <div>
-          {activeTab === 'today' && (
-            <TodayPage
-              habits={habits}
-              completions={completions}
-              loading={loading}
-              onAddHabit={addHabit}
-              onUpdateHabit={updateHabit}
-              onDeleteHabit={deleteHabit}
-              onToggle={toggleCompletion}
-            />
-          )}
-          {activeTab === 'week' && (
-            <WeekPage
-              habits={habits}
-              completions={completions}
-              onToggle={toggleCompletion}
-            />
-          )}
-          {activeTab === 'report' && (
-            <ReportPage
-              habits={habits}
-              completions={completions}
-            />
-          )}
+        <div className="relative overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              {activeTab === 'today' && (
+                <TodayPage
+                  habits={habits}
+                  completions={completions}
+                  loading={loading}
+                  onAddHabit={addHabit}
+                  onUpdateHabit={updateHabit}
+                  onDeleteHabit={deleteHabit}
+                  onToggle={handleToggle}
+                />
+              )}
+              {activeTab === 'week' && (
+                <WeekPage
+                  habits={habits}
+                  completions={completions}
+                  onToggle={handleToggle}
+                />
+              )}
+              {activeTab === 'report' && (
+                <ReportPage
+                  habits={habits}
+                  completions={completions}
+                />
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>

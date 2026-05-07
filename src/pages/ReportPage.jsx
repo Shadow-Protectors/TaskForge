@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ReportModal from '../components/report/ReportModal'
+import Heatmap from '../components/report/Heatmap'
 import { getLastNDates } from '../hooks/useCompletions'
 import { calculateCompletionRate } from '../hooks/useStreak'
 
@@ -21,11 +22,11 @@ export default function ReportPage({ habits, completions }) {
   ).length
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="font-bold text-slate-900 dark:text-slate-100">Report</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Last 7 days</p>
+          <h2 className="font-bold text-slate-900 dark:text-slate-100">Insights</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Overview & Yearly activity</p>
         </div>
         <button
           id="open-report-btn"
@@ -39,6 +40,8 @@ export default function ReportPage({ habits, completions }) {
           Full Report
         </button>
       </div>
+
+      <Heatmap completions={completions} />
 
       {/* Overview cards */}
       <div className="grid grid-cols-2 gap-3">
