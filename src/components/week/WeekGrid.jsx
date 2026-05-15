@@ -75,24 +75,33 @@ export default function WeekGrid({ habits, completions, onToggle }) {
                   <button
                     key={date}
                     id={`week-cell-${habit.id}-${date}`}
-                    onClick={() => !isFuture && onToggle(habit.id, date)}
-                    disabled={isFuture}
-                    aria-label={`${habit.name} on ${date}: ${done ? 'completed' : 'not completed'}`}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200
+                    onClick={() => isToday && onToggle(habit.id, date)}
+                    disabled={!isToday}
+                    aria-label={`${habit.name} on ${date}: ${done ? 'completed' : 'not completed'}${!isToday ? ' (read-only)' : ''}`}
+                    title={!isToday ? 'Only today can be toggled to maintain integrity' : ''}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 relative group/cell
                       ${isFuture
                         ? 'opacity-20 cursor-not-allowed bg-slate-100 dark:bg-slate-700/30'
                         : done
                           ? 'bg-violet-600 shadow-lg shadow-violet-500/30 hover:bg-violet-700'
                           : isToday
                             ? 'bg-slate-100 dark:bg-slate-700 border-2 border-violet-400 hover:bg-violet-100 dark:hover:bg-violet-900/20'
-                            : 'bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700'
-                      }`}
+                            : 'bg-slate-100 dark:bg-slate-700/60 opacity-60 cursor-default'
+                      }
+                      ${!isToday && !isFuture ? 'hover:bg-slate-200 dark:hover:bg-slate-600' : ''}
+                    `}
                   >
-                    {done && (
+                    {done ? (
                       <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
-                    )}
+                    ) : !isToday && !isFuture ? (
+                      <div className="opacity-0 group-hover/cell:opacity-100 transition-opacity">
+                        <svg className="w-3 h-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </div>
+                    ) : null}
                   </button>
                 )
               })}

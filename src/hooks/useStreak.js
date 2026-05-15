@@ -44,3 +44,37 @@ export function calculateCompletionRate(completedDates, targetDates) {
   const completed = targetDates.filter(d => dateSet.has(d)).length
   return Math.round((completed / targetDates.length) * 100)
 }
+/**
+ * Calculates the longest consecutive-day streak for a habit.
+ * @param {string[]} completedDates - Array of YYYY-MM-DD strings
+ * @returns {number} Longest streak count
+ */
+export function calculateLongestStreak(completedDates) {
+  if (!completedDates || completedDates.length === 0) return 0
+
+  // Create a sorted array of unique timestamps (normalized to midnight)
+  const dates = [...new Set(completedDates)]
+    .map(d => new Date(d + 'T00:00:00').getTime())
+    .sort((a, b) => a - b)
+
+  let maxStreak = 1
+  let currentStreak = 1
+  const MS_PER_DAY = 24 * 60 * 60 * 1000
+
+  for (let i = 1; i < dates.length; i++) {
+    const diff = dates[i] - dates[i - 1]
+    
+    // Check if the difference is exactly one day
+    if (diff === MS_PER_DAY) {
+      currentStreak++
+    } else if (diff > MS_PER_DAY) {
+      currentStreak = 1
+    }
+    
+    if (currentStreak > maxStreak) {
+      maxStreak = currentStreak
+    }
+  }
+
+  return maxStreak
+}

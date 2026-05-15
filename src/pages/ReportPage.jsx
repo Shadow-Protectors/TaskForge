@@ -2,7 +2,7 @@ import { useState } from 'react'
 import ReportModal from '../components/report/ReportModal'
 import Heatmap from '../components/report/Heatmap'
 import { getLastNDates } from '../hooks/useCompletions'
-import { calculateCompletionRate } from '../hooks/useStreak'
+import { calculateCompletionRate, calculateLongestStreak } from '../hooks/useStreak'
 
 export default function ReportPage({ habits, completions }) {
   const [showModal, setShowModal] = useState(false)
@@ -72,11 +72,17 @@ export default function ReportPage({ habits, completions }) {
           const dates = completions.filter(c => c.habit_id === h.id).map(c => c.date)
           const rate = calculateCompletionRate(dates, last7)
           const done = last7.filter(d => dates.includes(d)).length
+          const longest = calculateLongestStreak(dates)
           return (
             <div key={h.id} className="glass-card-solid p-4 flex items-center gap-4 animate-fade-in">
               <span className="text-2xl">{h.emoji}</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate">{h.name}</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 truncate">{h.name}</p>
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                    <span className="text-amber-500">🏆</span> {longest}d best
+                  </span>
+                </div>
                 <div className="flex items-center gap-2 mt-1.5">
                   <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                     <div

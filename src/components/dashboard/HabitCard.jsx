@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import confetti from 'canvas-confetti'
-import { calculateStreak } from '../../hooks/useStreak'
+import { calculateStreak, calculateLongestStreak } from '../../hooks/useStreak'
 
 export default function HabitCard({ habit, completions, onToggle, onEdit, onDelete }) {
   const [deleting, setDeleting] = useState(false)
@@ -9,6 +9,8 @@ export default function HabitCard({ habit, completions, onToggle, onEdit, onDele
   const habitDates = completions.filter(c => c.habit_id === habit.id).map(c => c.date)
   const isCompletedToday = habitDates.includes(today)
   const streak = calculateStreak(habitDates)
+
+  const longestStreak = calculateLongestStreak(habitDates)
 
   const handleToggle = () => {
     if (!isCompletedToday) {
@@ -71,13 +73,18 @@ export default function HabitCard({ habit, completions, onToggle, onEdit, onDele
             </span>
           )}
         </div>
-        {streak > 0 && (
-          <div className="mt-1">
+        <div className="flex items-center gap-2 mt-1">
+          {streak > 0 && (
             <span className="streak-badge" style={{ backgroundColor: `${habit.color}15`, color: habit.color }}>
-              🔥 {streak} day streak
+              🔥 {streak}d
             </span>
-          </div>
-        )}
+          )}
+          {longestStreak > 0 && (
+            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1">
+              <span className="text-amber-500">🏆</span> {longestStreak}d best
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Actions (shown on hover) */}
