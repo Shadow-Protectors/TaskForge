@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -16,7 +16,9 @@ import {
   Menu, 
   X, 
   Folder,
-  Plus
+  Plus,
+  Sliders,
+  Trash2
 } from 'lucide-react'
 
 interface Project {
@@ -48,8 +50,10 @@ const colorMap: Record<string, string> = {
   sky: 'bg-sky-600/30 text-sky-300 border-sky-500/30',
 }
 
+const colors = ['indigo', 'fuchsia', 'emerald', 'amber', 'sky']
+
 export default function WorkspaceShell({
-  profile,
+  profile: initialProfile,
   projects: initialProjects,
   initialCompletionsCount,
   children,
@@ -57,18 +61,37 @@ export default function WorkspaceShell({
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
-  const onlineUsers = usePresence(profile)
 
+  const [profile, setProfile] = useState<Profile>(initialProfile)
   const [projects, setProjects] = useState<Project[]>(initialProjects)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  
+  // Modals state
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false)
   const [newProjectName, setNewProjectName] = useState('')
   const [creatingProject, setCreatingProject] = useState(false)
 
-  // Get current active project ID if in path
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false)
+  const [displayName, setDisplayName] = useState(profile.name)
+  const [avatarColor, setAvatarColor] = useState(profile.avatar_color)
+  const [updatingSettings, setUpdatingSettings] = useState(false)
+
+  // Presence
+  const onlineUsers = usePresence(profile)
+
+  // Active Project Context
   const activeProjectId = pathname.startsWith('/projects/') 
     ? pathname.split('/')[2] 
-    : projects[0]?.id || ''
+    : ''
+  const activeProject = projects.find(p => p.id === activeProjectId)
+  const isProjectOwner = activeProject?.owner_id === profile.id
+  const [projectRename, setProjectRename] = useState(activeProject?.name || '')
+
+  useEffect(() => {
+    if (activeProject) {
+      setProjectRename(activeProject.name)
+    }
+  }, [activeProjectId, activeProject])
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -105,11 +128,72 @@ export default function WorkspaceShell({
     }
   }
 
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setUpdatingSettings(true)
+
+    try {
+      // 1. Update user profile details
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ name: displayName, avatar_color: avatarColor })
+        .eq('id', profile.id)
+
+      if (profileError) throw profileError
+
+      setProfile(prev => ({ ...prev, name: displayName, avatar_color: avatarColor }))
+
+      // 2. If workspace owner & renaming project
+      if (activeProject && isProjectOwner && projectRename.trim() && projectRename !== activeProject.name) {
+        const { error: projectError } = await supabase
+          .from('projects')
+          .update({ name: projectRename })
+          .eq('id', activeProjectId)
+
+        if (projectError) throw projectError
+
+        setProjects(prev => prev.map(p => p.id === activeProjectId ? { ...p, name: projectRename } : p))
+      }
+
+      setIsSettingsModalOpen(false)
+      router.refresh()
+    } catch (err) {
+      alert('Failed to update settings')
+      console.error(err)
+    } finally {
+      setUpdatingSettings(false)
+    }
+  }
+
+  const handleDeleteProject = async () => {
+    if (!activeProject || !isProjectOwner) return
+    if (!confirm(`Are you sure you want to delete the workspace "${activeProject.name}"? This deletes all columns, tasks, and data permanently.`)) return
+    setUpdatingSettings(true)
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', activeProjectId)
+
+      if (error) throw error
+
+      setProjects(prev => prev.filter(p => p.id !== activeProjectId))
+      setIsSettingsModalOpen(false)
+      router.push('/dashboard')
+      router.refresh()
+    } catch (err) {
+      alert('Failed to delete workspace')
+      console.error(err)
+    } finally {
+      setUpdatingSettings(false)
+    }
+  }
+
   const getInitials = (name: string) => {
     return name.slice(0, 2).toUpperCase()
   }
 
-  // Check if a navigation item is active
   const isNavActive = (basePath: string) => {
     if (basePath === '/dashboard') return pathname === '/dashboard'
     return pathname.startsWith(basePath)
@@ -134,7 +218,7 @@ export default function WorkspaceShell({
         />
       )}
 
-      {/* Sidebar Panel matching "Collabify" styling */}
+      {/* Sidebar Panel */}
       <aside className={`
         fixed lg:static inset-y-0 left-0 w-64 bg-[#181818] border-r border-[#262626] p-6 flex flex-col z-50 transition-transform duration-300 lg:translate-x-0
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -174,7 +258,7 @@ export default function WorkspaceShell({
           </Link>
 
           <Link 
-            href={activeProjectId ? `/projects/${activeProjectId}` : '/dashboard'}
+            href={activeProjectId ? `/projects/${activeProjectId}` : (projects[0]?.id ? `/projects/${projects[0].id}` : '/dashboard')}
             onClick={() => setIsSidebarOpen(false)}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
               pathname.includes('/projects/') && !pathname.includes('/members')
@@ -200,7 +284,7 @@ export default function WorkspaceShell({
           </Link>
 
           <Link 
-            href={activeProjectId ? `/projects/${activeProjectId}/members` : '/dashboard'}
+            href={activeProjectId ? `/projects/${activeProjectId}/members` : (projects[0]?.id ? `/projects/${projects[0].id}/members` : '/dashboard')}
             onClick={() => setIsSidebarOpen(false)}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${
               pathname.includes('/members')
@@ -215,7 +299,7 @@ export default function WorkspaceShell({
           <button 
             onClick={() => {
               setIsSidebarOpen(false)
-              alert('Settings page - coming soon!')
+              setIsSettingsModalOpen(true)
             }}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold text-zinc-400 hover:bg-zinc-900/50 hover:text-zinc-200 transition-all text-left"
           >
@@ -224,7 +308,7 @@ export default function WorkspaceShell({
           </button>
         </nav>
 
-        {/* Dynamic Project List (under navigation context) */}
+        {/* Dynamic Project List */}
         <div className="mb-6 flex-1 overflow-y-auto min-h-0 border-t border-[#262626] pt-4">
           <div className="flex items-center justify-between px-3 mb-2 text-xxs font-bold text-zinc-500 uppercase tracking-widest">
             <span>Workspaces</span>
@@ -313,7 +397,7 @@ export default function WorkspaceShell({
         </main>
       </div>
 
-      {/* Create Project Modal */}
+      {/* Create Workspace Modal */}
       {isNewProjectModalOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl animate-scaleIn">
@@ -356,6 +440,120 @@ export default function WorkspaceShell({
                   {creatingProject ? 'Creating...' : 'Create'}
                 </button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Settings Configuration Modal */}
+      {isSettingsModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl animate-scaleIn">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-widest flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-zinc-400" />
+                <span>Account & Workspace Settings</span>
+              </h3>
+              <button 
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="text-zinc-400 hover:text-zinc-200"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSaveSettings} className="space-y-5">
+              
+              {/* Profile Settings */}
+              <div className="space-y-3.5 border-b border-zinc-800 pb-5">
+                <p className="text-xxs font-bold text-zinc-500 uppercase tracking-wider">Profile Settings</p>
+                
+                <div>
+                  <label className="text-xxs font-semibold text-zinc-400 block mb-1">Display Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-3 text-zinc-200 focus:outline-none focus:border-zinc-700 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xxs font-semibold text-zinc-400 block mb-2">Avatar Theme</label>
+                  <div className="flex items-center gap-2.5">
+                    {colors.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setAvatarColor(c)}
+                        className={`w-7 h-7 rounded-full border transition-transform ${
+                          avatarColor === c ? 'border-white scale-110' : 'border-transparent hover:scale-105'
+                        }`}
+                        style={{
+                          backgroundColor: c === 'indigo' ? '#4f46e5' : c === 'fuchsia' ? '#d946ef' : c === 'emerald' ? '#10b981' : c === 'amber' ? '#f59e0b' : '#0ea5e9'
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Workspace Settings (if inside active workspace) */}
+              {activeProject && (
+                <div className="space-y-3.5">
+                  <p className="text-xxs font-bold text-zinc-500 uppercase tracking-wider">Active Workspace Settings</p>
+                  
+                  {isProjectOwner ? (
+                    <>
+                      <div>
+                        <label className="text-xxs font-semibold text-zinc-400 block mb-1">Rename Workspace</label>
+                        <input
+                          type="text"
+                          required
+                          value={projectRename}
+                          onChange={(e) => setProjectRename(e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl py-2.5 px-3 text-zinc-200 focus:outline-none focus:border-zinc-700 text-xs"
+                        />
+                      </div>
+
+                      <div className="pt-2">
+                        <button
+                          type="button"
+                          onClick={handleDeleteProject}
+                          className="w-full bg-red-950/20 border border-red-900/30 hover:bg-red-900 hover:text-white text-red-400 rounded-xl py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Delete Workspace Permanently</span>
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-xxs text-zinc-500 italic">
+                      You are a member of this workspace. Only the workspace owner ({activeProject.owner_id === profile.id ? 'You' : 'another admin'}) can rename or delete this workspace.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Submit Buttons */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsModalOpen(false)}
+                  className="flex-1 bg-zinc-850 hover:bg-zinc-800 text-zinc-400 rounded-xl py-2.5 font-semibold text-xs transition-colors border border-zinc-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updatingSettings}
+                  className="flex-1 bg-white hover:bg-zinc-200 text-black rounded-xl py-2.5 font-semibold text-xs transition-colors flex items-center justify-center"
+                >
+                  {updatingSettings ? 'Updating...' : 'Save Settings'}
+                </button>
+              </div>
+
             </form>
           </div>
         </div>
