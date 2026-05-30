@@ -231,7 +231,7 @@ export default function WorkspaceShell({
               <Check className="w-4 h-4 text-white stroke-[3px]" />
             </div>
             <span className="font-bold text-lg text-white tracking-tight">
-              Collabify
+              TaskForge
             </span>
           </div>
           <button 

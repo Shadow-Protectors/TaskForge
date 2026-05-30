@@ -77,7 +77,7 @@ export default function LoginPage() {
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-violet-400 via-indigo-200 to-emerald-400 bg-clip-text text-transparent">
-            Synapse Portal
+            TaskForge
           </h1>
           <p className="text-slate-400 text-sm mt-1 text-center">
             {isSignUp 
